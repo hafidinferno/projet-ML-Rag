@@ -1,0 +1,48 @@
+# ============================================================================
+# Agent Fraude Bancaire - Dependencies (PINNED VERSIONS)
+# ============================================================================
+# Tested on: Windows 10/11, Python 3.11, venv
+# Last verified: 2026-01
+# ============================================================================
+
+# === Core Framework ===
+fastapi==0.109.0              # Stable LTS, async support
+uvicorn[standard]==0.27.0     # ASGI server with reload
+pydantic==2.5.3               # Data validation
+pydantic-settings==2.1.0      # Settings management
+python-dotenv==1.0.0          # .env file support
+
+# === NumPy (CRITICAL: must be <2.0 for ChromaDB compatibility) ===
+numpy==1.26.4                 # Last 1.x release, required by chromadb/torch
+
+# === Document Processing ===
+pymupdf==1.23.8               # PDF extraction (compact, no Poppler needed)
+markdown==3.5.1               # MD parsing
+
+# === Embeddings (PINNED for huggingface_hub compatibility) ===
+sentence-transformers==2.2.2  # Stable, works with older hf_hub
+huggingface_hub==0.21.4       # Last version with cached_download
+tokenizers==0.15.2            # Compatible with sentence-transformers 2.2.2
+transformers==4.37.2          # Required by sentence-transformers
+
+# === PyTorch (CPU-only for offline/lightweight) ===
+torch==2.1.2                  # Stable, CPU-compatible, works with numpy<2
+
+# === Vector Store ===
+chromadb==0.4.22              # Pinned, tested with numpy 1.26.4
+
+# === BM25 for Hybrid Retrieval ===
+rank-bm25==0.2.2              # Lightweight, no dependencies
+
+# === HTTP Client ===
+httpx==0.26.0                 # Async HTTP for Ollama calls
+
+# === Logging ===
+structlog==24.1.0             # Structured JSON logging
+
+# === Retry Logic ===
+tenacity==8.2.3               # Retry with exponential backoff
+
+# === Testing ===
+pytest==7.4.4                 # Test framework
+pytest-asyncio==0.23.3        # Async test support

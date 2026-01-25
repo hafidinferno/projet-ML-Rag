@@ -1,0 +1,21 @@
+# ============================================================================
+# Constraints file for pip
+# Usage: pip install -r requirements.txt -c constraints.txt
+# ============================================================================
+# These constraints prevent pip from upgrading to incompatible versions
+# even when other packages request newer versions.
+
+# CRITICAL: NumPy 2.x breaks ChromaDB (np.float_ removed)
+numpy<2.0,>=1.24.0
+
+# CRITICAL: huggingface_hub 0.22+ removed cached_download (breaks sentence-transformers 2.2.x)
+huggingface_hub<0.22,>=0.19.0
+
+# Torch must be 2.1.x for numpy 1.26 compatibility
+torch<2.2,>=2.0.0
+
+# ChromaDB 0.4.x series for stability
+chromadb<0.5,>=0.4.0
+
+# sentence-transformers 2.2.x for huggingface_hub compatibility
+sentence-transformers<2.3,>=2.2.0

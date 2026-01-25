@@ -1,0 +1,407 @@
+{
+    "name": "Fraud Agent - Workflow Principal",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "fraud-webhook",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-receiver",
+            "name": "Webhook Receiver",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1.1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "fraud-agent-webhook"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "loose"
+                    },
+                    "conditions": [
+                        {
+                            "id": "condition-fraud-confirmed",
+                            "leftValue": "={{ $json.fraud_confirmed }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                },
+                "options": {}
+            },
+            "id": "check-fraud-confirmed",
+            "name": "Fraude Confirmée?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                470,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "loose"
+                    },
+                    "conditions": [
+                        {
+                            "id": "condition-message-oui-fraude",
+                            "leftValue": "={{ $json.user_message.toLowerCase() }}",
+                            "rightValue": "oui",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        },
+                        {
+                            "id": "condition-message-fraude",
+                            "leftValue": "={{ $json.user_message.toLowerCase() }}",
+                            "rightValue": "fraude",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        },
+                        {
+                            "id": "condition-message-confirme",
+                            "leftValue": "={{ $json.user_message.toLowerCase() }}",
+                            "rightValue": "confirme",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "check-message-fraud",
+            "name": "Message contient fraude?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                470,
+                520
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:8000/chat",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({\n  \"user_message\": $json.user_message,\n  \"fraud_confirmed\": true,\n  \"transaction_context\": {\n    \"amount\": $json.transaction_context?.amount || 0,\n    \"currency\": $json.transaction_context?.currency || \"EUR\",\n    \"merchant\": $json.transaction_context?.merchant || \"Non spécifié\",\n    \"channel\": $json.transaction_context?.channel || \"online\",\n    \"date\": $json.transaction_context?.date || new Date().toISOString().split('T')[0],\n    \"country\": $json.transaction_context?.country || \"FR\"\n  },\n  \"session_id\": $json.session_id || null\n}) }}",
+                "options": {
+                    "timeout": 120000,
+                    "response": {
+                        "response": {
+                            "fullResponse": false,
+                            "responseFormat": "json"
+                        }
+                    }
+                }
+            },
+            "id": "call-fraud-agent",
+            "name": "Appel Agent Fraude",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                750,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "response-message",
+                            "name": "response",
+                            "value": "={{ $json.agent_response?.customer_message || \"Une erreur s'est produite. Veuillez contacter votre banque.\" }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "response-actions",
+                            "name": "actions",
+                            "value": "={{ $json.agent_response?.actions || [] }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "response-questions",
+                            "name": "questions",
+                            "value": "={{ $json.agent_response?.missing_info_questions || [] }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "response-citations",
+                            "name": "citations",
+                            "value": "={{ $json.agent_response?.citations || [] }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "response-risk-flags",
+                            "name": "risk_flags",
+                            "value": "={{ $json.agent_response?.risk_flags || [] }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "response-success",
+                            "name": "success",
+                            "value": "={{ $json.success }}",
+                            "type": "boolean"
+                        },
+                        {
+                            "id": "response-session",
+                            "name": "session_id",
+                            "value": "={{ $json.session_id }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "format-response",
+            "name": "Formater Réponse",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.2,
+            "position": [
+                970,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "no-fraud-message",
+                            "name": "response",
+                            "value": "Je comprends votre préoccupation. Pour que je puisse vous aider avec les procédures de fraude, pouvez-vous confirmer qu'il s'agit bien d'une transaction que vous n'avez pas effectuée ou autorisée?",
+                            "type": "string"
+                        },
+                        {
+                            "id": "no-fraud-actions",
+                            "name": "actions",
+                            "value": "=[]",
+                            "type": "array"
+                        },
+                        {
+                            "id": "no-fraud-questions",
+                            "name": "questions",
+                            "value": "=[\"S'agit-il d'une transaction que vous n'avez pas effectuée?\", \"Avez-vous été victime d'une fraude?\"]",
+                            "type": "array"
+                        },
+                        {
+                            "id": "no-fraud-success",
+                            "name": "success",
+                            "value": true,
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "no-fraud-response",
+            "name": "Réponse Non-Fraude",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.2,
+            "position": [
+                750,
+                520
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify($json) }}",
+                "options": {
+                    "responseCode": 200,
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    }
+                }
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1190,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "error-message",
+                            "name": "response",
+                            "value": "Une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer ou contacter directement votre banque.",
+                            "type": "string"
+                        },
+                        {
+                            "id": "error-success",
+                            "name": "success",
+                            "value": false,
+                            "type": "boolean"
+                        },
+                        {
+                            "id": "error-detail",
+                            "name": "error",
+                            "value": "={{ $json.error || 'Unknown error' }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "error-handler",
+            "name": "Gestion Erreur",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.2,
+            "position": [
+                970,
+                520
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Receiver": {
+            "main": [
+                [
+                    {
+                        "node": "Fraude Confirmée?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fraude Confirmée?": {
+            "main": [
+                [
+                    {
+                        "node": "Appel Agent Fraude",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Message contient fraude?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Message contient fraude?": {
+            "main": [
+                [
+                    {
+                        "node": "Appel Agent Fraude",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Réponse Non-Fraude",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Appel Agent Fraude": {
+            "main": [
+                [
+                    {
+                        "node": "Formater Réponse",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Formater Réponse": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Réponse Non-Fraude": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gestion Erreur": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "fraud-agent",
+            "createdAt": "2024-01-01T00:00:00.000Z",
+            "updatedAt": "2024-01-01T00:00:00.000Z"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "versionId": "1"
+}
