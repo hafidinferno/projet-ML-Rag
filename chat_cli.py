@@ -1,6 +1,6 @@
 import requests
 
-API_URL = "http://localhost:8000/chat"
+API_URL = "http://localhost:8001/chat"
 
 context = {
     "amount": 149.99,

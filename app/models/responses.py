@@ -11,14 +11,11 @@ from enum import Enum
 class TrustLevel(str, Enum):
     """Trust level for RAG passages."""
     TRUSTED = "trusted"
-    UNTRUSTED = "untrusted"  # Flagged by injection filter
+    UNTRUSTED = "untrusted"
 
 
 class Citation(BaseModel):
-    """
-    Auditable citation structure.
-    Each piece of information from the agent must be traceable.
-    """
+    """Auditable citation structure."""
     chunk_id: str = Field(..., description="Unique identifier of the chunk in vector store")
     doc_id: str = Field(..., description="Document identifier (filename)")
     title: str = Field(..., description="Document title or filename")
@@ -31,46 +28,25 @@ class Citation(BaseModel):
 
 class RiskFlag(BaseModel):
     """Risk indicator for the account."""
-    flag_type: str = Field(..., description="Type: account_compromised, multiple_fraud, urgent_action")
+    flag_type: str = Field(..., description="Type: account_compromised, multiple_fraud, urgent_action, sensitive_data_shared, technical_issue")
     description: str
     severity: str = Field(..., description="low, medium, high, critical")
 
 
 class AgentResponse(BaseModel):
-    """
-    Structured response from the fraud agent.
-    Designed for n8n consumption + human-readable message.
-    """
+    """Structured response from the fraud agent."""
     customer_message: str = Field(
-        ..., 
+        ...,
         description="Human-readable message for the customer in their language"
     )
-    actions: List[str] = Field(
-        default_factory=list,
-        description="List of recommended action steps for the customer"
-    )
-    missing_info_questions: List[str] = Field(
-        default_factory=list,
-        description="Questions to ask if information is missing"
-    )
-    citations: List[Citation] = Field(
-        default_factory=list,
-        description="Auditable sources for each piece of information"
-    )
-    risk_flags: List[RiskFlag] = Field(
-        default_factory=list,
-        description="Risk indicators if account may be compromised"
-    )
-    raw_passages_used: int = Field(
-        default=0,
-        description="Number of RAG passages injected in prompt"
-    )
-    info_not_found: bool = Field(
-        default=False,
-        description="True if required info was not found in documents"
-    )
-    
-    
+    actions: List[str] = Field(default_factory=list, description="Recommended action steps")
+    missing_info_questions: List[str] = Field(default_factory=list, description="Questions to ask if info is missing")
+    citations: List[Citation] = Field(default_factory=list, description="Auditable sources")
+    risk_flags: List[RiskFlag] = Field(default_factory=list, description="Risk indicators")
+    raw_passages_used: int = Field(default=0, description="Number of RAG passages injected")
+    info_not_found: bool = Field(default=False, description="True if required info not found in docs")
+
+
 class ChatResponse(BaseModel):
     """Full API response for /chat endpoint."""
     success: bool
@@ -78,7 +54,7 @@ class ChatResponse(BaseModel):
     error: Optional[str] = None
     session_id: Optional[str] = None
     processing_time_ms: int = Field(default=0)
-    
+
 
 class IngestResponse(BaseModel):
     """Response for document ingestion."""

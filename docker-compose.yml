@@ -1,31 +1,55 @@
 version: '3.8'
 
 services:
+ 
   # ===========================================================================
   # Fraud Agent API
   # ===========================================================================
+  
   fraud-agent-api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: fraud-agent-api
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
+      
+      # Ollama runs on the HOST (Windows/macOS). From container, use host.docker.internal
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=mistral
+
+      # App paths inside container
       - DOCS_DIR=/app/data/docs
       - VECTORDB_DIR=/app/vectordb
       - LOGS_DIR=/app/logs
+
+      # Persist HF cache to avoid huge re-downloads and "no space left"
+      - HF_HOME=/app/.cache/huggingface
+      - TRANSFORMERS_CACHE=/app/.cache/huggingface
+
     volumes:
-      # Mount documents directory
+      # Documents (read-only)
       - ./data/docs:/app/data/docs:ro
+
       # Persist vector database
       - ./vectordb:/app/vectordb
+
       # Persist logs
       - ./logs:/app/logs
+
+      # Persist HuggingFace / sentence-transformers cache
+      - ./hf_cache:/app/.cache/huggingface
+
+      # Copy CLI script into container
+      - ./chat_cli.py:/app/chat_cli.py
+
     restart: unless-stopped
+
+    # Needed on Linux; safe to keep on Docker Desktop too
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
